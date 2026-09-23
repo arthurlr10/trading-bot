@@ -44,6 +44,52 @@ python -m src.main
 Logs: `data/bot.log`  
 Database: `data/trades.db`
 
+Telegram: `/kill`, `/resume`, `/solde` (balance).
+
+## Déploiement serveur (Proxmox / VPS)
+
+Le bot doit tourner en process permanent (ce n’est pas un site Next.js / Vercel).
+
+1. Cloner le projet (ex. `/var/www/trading-bot`)
+2. Paquets système si besoin (compte sudo) :
+   ```bash
+   sudo apt update
+   sudo apt install python3-venv python3-pip tmux
+   # adapter python3.X-venv selon: python3 --version
+   ```
+3. Setup :
+   ```bash
+   cd /var/www/trading-bot   # ou ~/trading-bot
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   cp .env.example .env
+   # Éditer .env (clés Demo Binance + Telegram)
+   ```
+4. Lancer dans tmux :
+   ```bash
+   tmux new -s bot
+   source .venv/bin/activate
+   python -m src.main
+   ```
+5. Détacher (laisser le bot tourner) :
+   - Idéal : `Ctrl+B` puis `D` (relâcher Ctrl avant `D`)
+   - Sur **console Proxmox web**, `Ctrl+B` marche souvent mal (`^B` apparaît dans les logs) → **fermer la console suffit**, le bot continue dans tmux
+   - Depuis un autre shell : `tmux detach-client -s bot`
+6. Revenir aux logs :
+   ```bash
+   tmux attach -t bot
+   ```
+   Si `duplicate session: bot` → la session existe déjà, utilise `attach` (pas `new`).
+
+Sans tmux, alternative :
+```bash
+mkdir -p data
+nohup python -m src.main >> data/bot.log 2>&1 &
+```
+
+**Important :** ne pas laisser le bot tourner en même temps sur le Mac et le serveur (doublons de trades). Ne pas exposer `.env` en HTTP.
+
 ## Kill switch
 
 - **File**: create `data/KILL` (any content) → no new entries  
