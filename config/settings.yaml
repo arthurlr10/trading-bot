@@ -4,7 +4,7 @@ exchange:
   pairs:
     - "BTC/USDT:USDT"
     - "ETH/USDT:USDT"
-  timeframe: "15m"
+  timeframe: "5m"
   # Candle history depth for indicators
   ohlcv_limit: 100
 
@@ -16,11 +16,13 @@ strategy:
   rsi_short_min: 30
 
 risk:
-  risk_per_trade_pct: 1.0
+  # Aggressive demo profile: 5% per trade (was 1%)
+  risk_per_trade_pct: 5.0
   reward_risk_ratio: 1.5
   stop_loss_pct: 1.5
-  max_daily_loss_pct: 3.0
-  max_weekly_loss_pct: 6.0
+  # Raised so a single 5% loss does not trip the daily brake
+  max_daily_loss_pct: 15.0
+  max_weekly_loss_pct: 30.0
   max_positions_per_pair: 1
 
 bot:

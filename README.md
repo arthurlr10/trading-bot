@@ -30,7 +30,8 @@ All tunable parameters live in [`config/settings.yaml`](config/settings.yaml):
 
 - Pairs, timeframe
 - EMA / RSI settings
-- Risk: 1% per trade, R:R 1.5, daily 3% / weekly 6% loss limits
+- Risk: 5% per trade (aggressive demo), R:R 1.5, daily 15% / weekly 30% loss limits
+- Timeframe: 5m
 
 `exchange.testnet` **must** stay `true`. The bot exits if it is set to `false`, and also refuses to start unless the exchange URL is `demo-fapi.binance.com`.
 
@@ -109,12 +110,12 @@ Reports win rate, profit factor, max drawdown, trade count, cumulative PnL.
 
 | Rule | Value |
 |------|-------|
-| Risk per trade | ≤ 1% of equity |
+| Risk per trade | 5% of equity (aggressive demo; code cap 10%) |
 | Stop loss | Set at open, never modified |
 | Reward / risk | ≥ 1 : 1.5 |
 | No martingale | Size from risk % only |
-| Daily loss | 3% → pause until next UTC day |
-| Weekly loss | 6% → pause until next Monday UTC |
+| Daily loss | 15% → pause until next UTC day |
+| Weekly loss | 30% → pause until next Monday UTC |
 | Positions | Max 1 open per pair |
 
 ## Safety

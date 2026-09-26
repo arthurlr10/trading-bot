@@ -147,8 +147,8 @@ class RiskManager:
             return None
 
         cfg = self.config
-        # Hard floors — refuse weaker risk settings than plan defaults
-        risk_pct = min(cfg.risk_per_trade_pct, 1.0)
+        # Cap at 10% absolute safety (demo aggressive may use up to 5%)
+        risk_pct = min(max(cfg.risk_per_trade_pct, 0.1), 10.0)
         rr = max(cfg.reward_risk_ratio, 1.5)
         sl_pct = cfg.stop_loss_pct / 100.0
 
