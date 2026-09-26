@@ -23,6 +23,8 @@ class Signal:
     rsi: float | None = None
     ema_fast: float | None = None
     ema_slow: float | None = None
+    atr: float | None = None
+    sl_distance: float | None = None
 
 
 def _ema(series: pd.Series, period: int) -> pd.Series:

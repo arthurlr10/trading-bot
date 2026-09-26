@@ -33,10 +33,10 @@ class RiskGateResult:
 class RiskManager:
     """
     Enforces:
-    - max 1% risk per trade
-    - fixed SL at open, R:R >= 1:1.5
+    - risk per trade from config (capped at 10%)
+    - SL fixed at open (ATR distance or % fallback), R:R >= 1:1.5
     - no martingale (size from risk %, never raised after loss)
-    - daily loss 3% / weekly loss 6% pauses
+    - daily / weekly loss pauses
     - one position per pair
     """
 
@@ -123,7 +123,6 @@ class RiskManager:
             return RiskGateResult(False, "db_position_already_open")
 
         if self.config.max_positions_per_pair != 1:
-            # Hard rule from plan: one position per pair
             logger.warning(
                 "max_positions_per_pair forced to 1 (config was %s)",
                 self.config.max_positions_per_pair,
@@ -139,6 +138,7 @@ class RiskManager:
         *,
         amount_precision_fn,
         min_amount: float,
+        sl_distance: float | None = None,
     ) -> TradePlan | None:
         """Compute qty / SL / TP from risk rules. Never increases size after losses."""
         if side not in (SignalSide.LONG, SignalSide.SHORT):
@@ -147,13 +147,12 @@ class RiskManager:
             return None
 
         cfg = self.config
-        # Cap at 10% absolute safety (demo aggressive may use up to 5%)
         risk_pct = min(max(cfg.risk_per_trade_pct, 0.1), 10.0)
         rr = max(cfg.reward_risk_ratio, 1.5)
-        sl_pct = cfg.stop_loss_pct / 100.0
 
         risk_amount = equity * (risk_pct / 100.0)
-        sl_distance = entry * sl_pct
+        if sl_distance is None or sl_distance <= 0:
+            sl_distance = entry * (cfg.stop_loss_pct / 100.0)
         if sl_distance <= 0:
             return None
 
@@ -164,16 +163,16 @@ class RiskManager:
             stop_loss = entry + sl_distance
             take_profit = entry - sl_distance * rr
 
-        # Position size from risk — no martingale amplifier
         raw_qty = risk_amount / sl_distance
         qty = float(amount_precision_fn(raw_qty))
         if qty < min_amount or qty <= 0:
             logger.warning(
-                "Qty %.8f below minimum %.8f (equity=%.2f risk=%.4f)",
+                "Qty %.8f below minimum %.8f (equity=%.2f risk=%.4f sl_dist=%.4f)",
                 qty,
                 min_amount,
                 equity,
                 risk_amount,
+                sl_distance,
             )
             return None
 

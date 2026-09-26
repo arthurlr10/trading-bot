@@ -4,30 +4,32 @@ exchange:
   pairs:
     - "BTC/USDT:USDT"
     - "ETH/USDT:USDT"
-  timeframe: "5m"
-  # Candle history depth for indicators
-  ohlcv_limit: 100
+  timeframe: "1h"
+  # Need enough bars for EMA200
+  ohlcv_limit: 250
 
 strategy:
+  name: ema_trend_atr
   ema_fast: 9
   ema_slow: 21
+  ema_trend: 200
+  atr_period: 14
+  atr_stop_mult: 1.5
   rsi_period: 14
   rsi_long_max: 70
   rsi_short_min: 30
 
 risk:
-  # Aggressive demo profile: 5% per trade (was 1%)
   risk_per_trade_pct: 5.0
-  reward_risk_ratio: 1.5
-  stop_loss_pct: 1.5
-  # Raised so a single 5% loss does not trip the daily brake
+  reward_risk_ratio: 2.0
+  # Fallback if ATR unavailable
+  stop_loss_pct: 1.2
   max_daily_loss_pct: 15.0
   max_weekly_loss_pct: 30.0
   max_positions_per_pair: 1
 
 bot:
-  poll_seconds: 30
+  poll_seconds: 60
   close_on_kill: false
-  # Timezone for daily/weekly loss windows (UTC)
   timezone: "UTC"
   log_level: "INFO"

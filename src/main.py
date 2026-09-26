@@ -16,7 +16,8 @@ from src.notify.telegram import TelegramNotifier
 from src.risk.manager import RiskManager
 from src.safety.kill_switch import KillSwitch
 from src.storage.database import Database
-from src.strategy.ema_rsi import EmaRsiStrategy, SignalSide
+from src.strategy.ema_rsi import SignalSide
+from src.strategy.ema_trend_atr import EmaTrendAtrStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ def run() -> None:
         notifier.send(f"FATAL exchange connect: {exc}")
         sys.exit(1)
 
-    strategy = EmaRsiStrategy(settings.strategy)
+    strategy = EmaTrendAtrStrategy(settings.strategy)
     risk = RiskManager(settings.risk, db)
     orders = OrderManager(client, db, notifier)
 
@@ -99,7 +100,9 @@ def run() -> None:
 
     notifier.send(
         "Bot started (Binance Futures DEMO)\n"
-        f"pairs={settings.exchange.pairs} tf={settings.exchange.timeframe}\n"
+        f"strategy={settings.strategy.name} tf={settings.exchange.timeframe}\n"
+        f"pairs={settings.exchange.pairs}\n"
+        f"risk={settings.risk.risk_per_trade_pct}% R:R={settings.risk.reward_risk_ratio}\n"
         f"solde: {start_equity}\n"
         "Commands: /kill /resume /solde"
     )
@@ -180,7 +183,7 @@ def _process_symbol(
     symbol: str,
     settings,
     client: BinanceFuturesClient,
-    strategy: EmaRsiStrategy,
+    strategy: EmaTrendAtrStrategy,
     risk: RiskManager,
     orders: OrderManager,
     db: Database,
@@ -203,10 +206,10 @@ def _process_symbol(
 
     signal = strategy.evaluate(ohlcv)
     logger.info(
-        "%s signal=%s rsi=%s reason=%s",
+        "%s signal=%s atr=%s reason=%s",
         symbol,
         signal.side.value,
-        f"{signal.rsi:.1f}" if signal.rsi is not None else "n/a",
+        f"{signal.atr:.4f}" if signal.atr is not None else "n/a",
         signal.reason,
     )
     db.log_event(
@@ -217,6 +220,8 @@ def _process_symbol(
             "side": signal.side.value,
             "reason": signal.reason,
             "rsi": signal.rsi,
+            "atr": signal.atr,
+            "sl_distance": signal.sl_distance,
             "bar": bar_ts,
         },
     )
@@ -242,6 +247,7 @@ def _process_symbol(
         equity,
         amount_precision_fn=lambda q: client.amount_to_precision(symbol, q),
         min_amount=client.min_amount(symbol),
+        sl_distance=signal.sl_distance,
     )
     if plan is None:
         logger.warning("%s could not build trade plan", symbol)

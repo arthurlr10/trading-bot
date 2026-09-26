@@ -1,7 +1,7 @@
 # Binance Futures Demo Trading Bot
 
 Algorithmic trading bot for **Binance USD-M Futures Demo Trading** only (paper money).  
-Strategy: EMA 9/21 cross + RSI(14) filter, with hard-coded risk management.
+Strategy: **EMA trend-following + ATR stops** (EMA 9/21 cross, filter EMA200, SL = 1.5×ATR, R:R 2).
 
 > **Note:** Binance deprecated the classic Futures testnet (`testnet.binancefuture.com`)
 > for private API calls. This bot uses [Binance Demo Trading](https://demo.binance.com)
@@ -28,12 +28,20 @@ cp .env.example .env
 
 All tunable parameters live in [`config/settings.yaml`](config/settings.yaml):
 
-- Pairs, timeframe
-- EMA / RSI settings
-- Risk: 5% per trade (aggressive demo), R:R 1.5, daily 15% / weekly 30% loss limits
-- Timeframe: 5m
+- Strategy `ema_trend_atr`: timeframe **1h**, EMA 9/21 + trend EMA200, ATR stop
+- Risk: **5%** per trade, R:R **2.0**, daily 15% / weekly 30% loss limits
 
 `exchange.testnet` **must** stay `true`. The bot exits if it is set to `false`, and also refuses to start unless the exchange URL is `demo-fapi.binance.com`.
+
+## Backtest (offline)
+
+```bash
+source .venv/bin/activate
+python scripts/backtest_trend_atr.py --symbol BTC/USDT:USDT
+python scripts/backtest_trend_atr.py --symbol ETH/USDT:USDT
+```
+
+Uses public OHLCV (no need for the live bot to be stopped). Judger en **%**, pas en promesse de revenu journalier.
 
 ## Run
 
@@ -110,9 +118,10 @@ Reports win rate, profit factor, max drawdown, trade count, cumulative PnL.
 
 | Rule | Value |
 |------|-------|
-| Risk per trade | 5% of equity (aggressive demo; code cap 10%) |
-| Stop loss | Set at open, never modified |
-| Reward / risk | ≥ 1 : 1.5 |
+| Risk per trade | 5% of equity (demo; code cap 10%) |
+| Stop loss | 1.5 × ATR(14), fixed at open |
+| Reward / risk | 2.0 |
+| Trend filter | Only long above EMA200 / short below |
 | No martingale | Size from risk % only |
 | Daily loss | 15% → pause until next UTC day |
 | Weekly loss | 30% → pause until next Monday UTC |

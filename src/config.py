@@ -26,8 +26,12 @@ class ExchangeConfig:
 
 @dataclass(frozen=True)
 class StrategyConfig:
+    name: str
     ema_fast: int
     ema_slow: int
+    ema_trend: int
+    atr_period: int
+    atr_stop_mult: float
     rsi_period: int
     rsi_long_max: float
     rsi_short_min: float
@@ -95,7 +99,7 @@ def load_settings(config_path: Path | None = None) -> Settings:
         testnet=bool(_require(exchange_raw, "testnet")),
         pairs=list(_require(exchange_raw, "pairs")),
         timeframe=str(_require(exchange_raw, "timeframe")),
-        ohlcv_limit=int(exchange_raw.get("ohlcv_limit", 100)),
+        ohlcv_limit=int(exchange_raw.get("ohlcv_limit", 250)),
     )
 
     if not exchange.testnet:
@@ -107,8 +111,12 @@ def load_settings(config_path: Path | None = None) -> Settings:
         sys.exit(1)
 
     strategy = StrategyConfig(
+        name=str(strategy_raw.get("name", "ema_trend_atr")),
         ema_fast=int(_require(strategy_raw, "ema_fast")),
         ema_slow=int(_require(strategy_raw, "ema_slow")),
+        ema_trend=int(strategy_raw.get("ema_trend", 200)),
+        atr_period=int(strategy_raw.get("atr_period", 14)),
+        atr_stop_mult=float(strategy_raw.get("atr_stop_mult", 1.5)),
         rsi_period=int(_require(strategy_raw, "rsi_period")),
         rsi_long_max=float(_require(strategy_raw, "rsi_long_max")),
         rsi_short_min=float(_require(strategy_raw, "rsi_short_min")),
